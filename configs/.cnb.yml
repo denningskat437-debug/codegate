@@ -1,0 +1,13 @@
+main: 
+    push:      
+      - name: "call trigger api"
+        stages:          
+          - name: "trigger codegate"
+            script: |
+              curl -X POST "http://117.72.191.205:8000/api/trigger" \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "project_name": "test",
+                  "repo_url": "https://cnb.cool/test-2026_513/test",
+                  "test_case_file": "test_cases/test_sample.xlsx"
+                }'

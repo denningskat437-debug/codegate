@@ -1,0 +1,124 @@
+{
+  "task_id": "TASK20260515120000",
+  "project_name": "示例项目",
+  "generated_at": "2026-05-15 12:00:00",
+  "commit_info": {
+    "commit_id": "abc123def456789",
+    "author": "developer",
+    "message": "feat: 添加用户登录功能"
+  },
+  "risk": {
+    "level": "low",
+    "score": 15,
+    "items": [],
+    "summary": "未发现明显安全风险"
+  },
+  "test_results": [
+    {
+      "case_id": "TC001",
+      "requirement": "用户登录",
+      "test_point": "登录验证",
+      "priority": "P0",
+      "result": "passed",
+      "test_time": "2026-05-15 12:00:01",
+      "evidence": "代码中 login 函数实现了登录验证功能，位于 app/auth.py 第 45 行，包含用户名密码校验逻辑",
+      "problem_code": ""
+    },
+    {
+      "case_id": "TC002",
+      "requirement": "用户登录",
+      "test_point": "密码加密存储",
+      "priority": "P0",
+      "result": "passed",
+      "test_time": "2026-05-15 12:00:05",
+      "evidence": "使用 bcrypt 进行密码哈希，位于 app/auth.py 第 78 行",
+      "problem_code": ""
+    },
+    {
+      "case_id": "TC003",
+      "requirement": "用户登录",
+      "test_point": "登录失败提示",
+      "priority": "P1",
+      "result": "passed",
+      "test_time": "2026-05-15 12:00:08",
+      "evidence": "登录失败返回统一错误提示，不暴露具体原因，位于 app/auth.py 第 102 行",
+      "problem_code": ""
+    },
+    {
+      "case_id": "TC004",
+      "requirement": "会话管理",
+      "test_point": "Session 超时",
+      "priority": "P1",
+      "result": "passed",
+      "test_time": "2026-05-15 12:00:12",
+      "evidence": "Session 配置了 30 分钟超时，位于 config.py 第 25 行",
+      "problem_code": ""
+    },
+    {
+      "case_id": "TC005",
+      "requirement": "会话管理",
+      "test_point": "登出功能",
+      "priority": "P1",
+      "result": "passed",
+      "test_time": "2026-05-15 12:00:15",
+      "evidence": "logout 函数正确清除 Session，位于 app/auth.py 第 130 行",
+      "problem_code": ""
+    },
+    {
+      "case_id": "TC006",
+      "requirement": "数据导出",
+      "test_point": "Excel 导出",
+      "priority": "P2",
+      "result": "failed",
+      "test_time": "2026-05-15 12:00:18",
+      "evidence": "未找到 Excel 导出功能的实现",
+      "problem_code": "app/export.py 缺少 export_excel 方法"
+    },
+    {
+      "case_id": "TC007",
+      "requirement": "数据导出",
+      "test_point": "CSV 导出",
+      "priority": "P2",
+      "result": "passed",
+      "test_time": "2026-05-15 12:00:20",
+      "evidence": "CSV 导出功能已实现，位于 app/export.py 第 15 行",
+      "problem_code": ""
+    },
+    {
+      "case_id": "TC008",
+      "requirement": "权限控制",
+      "test_point": "管理员权限校验",
+      "priority": "P0",
+      "result": "passed",
+      "test_time": "2026-05-15 12:00:23",
+      "evidence": "admin_required 装饰器实现了管理员权限校验，位于 app/decorators.py 第 10 行",
+      "problem_code": ""
+    },
+    {
+      "case_id": "TC009",
+      "requirement": "权限控制",
+      "test_point": "普通用户权限校验",
+      "priority": "P1",
+      "result": "passed",
+      "test_time": "2026-05-15 12:00:26",
+      "evidence": "login_required 装饰器实现了登录校验，位于 app/decorators.py 第 25 行",
+      "problem_code": ""
+    },
+    {
+      "case_id": "TC010",
+      "requirement": "日志记录",
+      "test_point": "操作日志",
+      "priority": "P2",
+      "result": "passed",
+      "test_time": "2026-05-15 12:00:28",
+      "evidence": "关键操作已记录日志，位于 app/logger.py 第 10 行",
+      "problem_code": ""
+    }
+  ],
+  "summary": {
+    "total": 10,
+    "passed": 9,
+    "failed": 1,
+    "pass_rate": "90.0%"
+  }
+}
