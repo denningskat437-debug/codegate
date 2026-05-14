@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+codegate/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# Cache
+cache/
+
+# Reports (keep directory structure)
+reports/*
+!reports/.gitkeep
+
+# Test cases temp files
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.env
+
+# Claude
+.claude/

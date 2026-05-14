@@ -1,0 +1,36 @@
+risk_levels:
+  high:
+    min: 90
+    max: 100
+    action: "reject"
+
+  medium:
+    min: 40
+    max: 89
+    action: "continue"
+
+  low:
+    min: 0
+    max: 39
+    action: "continue"
+
+risk_items:
+  sql_injection:
+    weight: 30
+    description: "SQL注入风险"
+
+  xss:
+    weight: 25
+    description: "XSS跨站脚本"
+
+  sensitive_data:
+    weight: 30
+    description: "敏感信息泄露"
+
+  command_injection:
+    weight: 30
+    description: "命令注入风险"
+
+  auth_missing:
+    weight: 20
+    description: "权限校验缺失"
