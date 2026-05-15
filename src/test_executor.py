@@ -73,9 +73,18 @@ class TestExecutor:
         overall_start = time.time()
         start_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        # 获取并发配置
-        max_concurrent = config.get('concurrency.test_case_concurrent', 3)
-        total = len(test_cases)
+        # 获取并发配置，动态调整
+        base_concurrent = config.get('concurrency.test_case_concurrent', 10)
+        # 根据用例数量动态调整并发数
+        if total <= 10:
+            max_concurrent = min(base_concurrent, 3)
+        elif total <= 50:
+            max_concurrent = min(base_concurrent, 5)
+        elif total <= 100:
+            max_concurrent = min(base_concurrent, 8)
+        else:
+            max_concurrent = base_concurrent  # 100+ 用例使用配置的最大并发数
+
         logger.info(f"开始并发执行 {total} 个测试用例，最大并发数: {max_concurrent}")
 
         # 使用 anyio 运行异步并发执行
@@ -113,21 +122,32 @@ class TestExecutor:
         """异步并发执行所有测试用例"""
         results = []
         semaphore = anyio.Semaphore(max_concurrent)
+        completed = 0
+        total = len(test_cases)
+        lock = anyio.Lock()
 
         async def run_one(case: Dict, index: int):
+            nonlocal completed
             async with semaphore:
                 case_id = case.get('case_id', f'case_{index}')
-                logger.info(f"执行测试用例 [{index}/{len(test_cases)}]: {case_id}")
+                logger.info(f"执行测试用例 [{index}/{total}]: {case_id}")
                 start_time = time.time()
                 try:
                     result = await self._execute_async(case)
                     result['_index'] = index
                     result['execution_time'] = round(time.time() - start_time, 2)
                     status = "✓ 通过" if result['result'] == 'passed' else "✗ 失败"
-                    logger.info(f"  {status}: {case_id} (耗时 {result['execution_time']}s)")
+
+                    async with lock:
+                        completed += 1
+                        progress = f"[{completed}/{total}]"
+                        logger.info(f"  {status}: {case_id} (耗时 {result['execution_time']}s) {progress}")
+
                     results.append(result)
                 except Exception as e:
-                    logger.error(f"  执行异常: {case_id} - {e}")
+                    async with lock:
+                        completed += 1
+                    logger.error(f"  执行异常: {case_id} - {e} [{completed}/{total}]")
                     error_result = self._error_result(case, str(e))
                     error_result['_index'] = index
                     error_result['execution_time'] = round(time.time() - start_time, 2)

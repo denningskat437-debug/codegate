@@ -68,4 +68,4 @@ user_mapping:
 
 # 并发配置
 concurrency:
-  test_case_concurrent: 3           # 测试用例最大并发数，建议不超过5避免API限流
+  test_case_concurrent: 10          # 测试用例最大并发数，300+用例建议10并发提升效率
