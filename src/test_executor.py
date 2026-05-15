@@ -75,6 +75,7 @@ class TestExecutor:
 
         # 获取并发配置，动态调整
         base_concurrent = config.get('concurrency.test_case_concurrent', 10)
+        total = len(test_cases)
         # 根据用例数量动态调整并发数
         if total <= 10:
             max_concurrent = min(base_concurrent, 3)
