@@ -38,6 +38,7 @@ claude:
 # 风险评估配置
 risk:
   rules_file: "configs/risk_rules.yml"
+  skip_test_on_high: false   # 高风险时是否跳过测试用例，true=跳过并发邮件打回，false=继续执行测试
   thresholds:
     high:
       min: 70
@@ -64,3 +65,7 @@ email:
 user_mapping:
   enabled: true                     # 是否启用用户映射
   file: "data/user_mapping.xlsx"    # 用户映射文件路径
+
+# 并发配置
+concurrency:
+  test_case_concurrent: 3           # 测试用例最大并发数，建议不超过5避免API限流

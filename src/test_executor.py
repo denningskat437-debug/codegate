@@ -1,7 +1,7 @@
 """
 测试用例执行模块
-使用 Claude Agent SDK 逐条执行测试用例校验
-增强版：输出详细分析、执行时长统计
+使用 Claude Agent SDK 并发执行测试用例校验
+增强版：输出详细分析、执行时长统计、并发控制
 """
 import anyio
 import json
@@ -27,6 +27,7 @@ except ImportError:
     CLAUDE_SDK_AVAILABLE = False
 
 from src.retry_handler import retry_claude_sdk
+from src.config_manager import config
 
 
 class TestExecutor:
@@ -47,7 +48,7 @@ class TestExecutor:
 
     def execute_all(self, test_cases: List[Dict]) -> Dict:
         """
-        执行所有测试用例
+        并发执行所有测试用例
 
         Args:
             test_cases: 测试用例列表
@@ -66,32 +67,27 @@ class TestExecutor:
                 }
             }
         """
-        results = []
-        total = len(test_cases)
+        if not test_cases:
+            return {'results': [], 'time_stats': {}}
 
         overall_start = time.time()
         start_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        execution_times = []
 
-        for i, case in enumerate(test_cases, 1):
-            case_id = case.get('case_id', f'case_{i}')
-            logger.info(f"执行测试用例 [{i}/{total}]: {case_id}")
+        # 获取并发配置
+        max_concurrent = config.get('concurrency.test_case_concurrent', 3)
+        total = len(test_cases)
+        logger.info(f"开始并发执行 {total} 个测试用例，最大并发数: {max_concurrent}")
 
-            try:
-                result = self.execute_one(case)
-                results.append(result)
-                execution_times.append(result.get('execution_time', 0))
+        # 使用 anyio 运行异步并发执行
+        results = anyio.run(self._execute_all_async, test_cases, max_concurrent)
 
-                status = "✓ 通过" if result['result'] == 'passed' else "✗ 失败"
-                logger.info(f"  {status}: {case_id} (耗时 {result.get('execution_time', 0)}s)")
+        # 按原始顺序排序结果
+        results.sort(key=lambda x: x.get('_index', 0))
+        for r in results:
+            r.pop('_index', None)
 
-            except Exception as e:
-                logger.error(f"  执行异常: {case_id} - {e}")
-                error_result = self._error_result(case, str(e))
-                error_result['execution_time'] = 0
-                results.append(error_result)
-                execution_times.append(0)
-
+        # 统计执行时间
+        execution_times = [r.get('execution_time', 0) for r in results]
         overall_end = time.time()
         end_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -105,12 +101,43 @@ class TestExecutor:
             'case_count': total
         }
 
-        logger.info(f"测试执行完成: 总耗时 {time_stats['total_time']}s, 平均 {time_stats['average_time']}s/用例")
+        passed = sum(1 for r in results if r.get('result') == 'passed')
+        logger.info(f"测试执行完成: 通过 {passed}/{total}, 总耗时 {time_stats['total_time']}s")
 
         return {
             'results': results,
             'time_stats': time_stats
         }
+
+    async def _execute_all_async(self, test_cases: List[Dict], max_concurrent: int) -> List[Dict]:
+        """异步并发执行所有测试用例"""
+        results = []
+        semaphore = anyio.Semaphore(max_concurrent)
+
+        async def run_one(case: Dict, index: int):
+            async with semaphore:
+                case_id = case.get('case_id', f'case_{index}')
+                logger.info(f"执行测试用例 [{index}/{len(test_cases)}]: {case_id}")
+                start_time = time.time()
+                try:
+                    result = await self._execute_async(case)
+                    result['_index'] = index
+                    result['execution_time'] = round(time.time() - start_time, 2)
+                    status = "✓ 通过" if result['result'] == 'passed' else "✗ 失败"
+                    logger.info(f"  {status}: {case_id} (耗时 {result['execution_time']}s)")
+                    results.append(result)
+                except Exception as e:
+                    logger.error(f"  执行异常: {case_id} - {e}")
+                    error_result = self._error_result(case, str(e))
+                    error_result['_index'] = index
+                    error_result['execution_time'] = round(time.time() - start_time, 2)
+                    results.append(error_result)
+
+        async with anyio.create_task_group() as tg:
+            for i, case in enumerate(test_cases, 1):
+                tg.start_soon(run_one, case, i)
+
+        return results
 
     def execute_one(self, case: Dict) -> Dict:
         """执行单个测试用例"""

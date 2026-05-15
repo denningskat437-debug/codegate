@@ -114,6 +114,9 @@ class ConfigManager:
                     'medium': {'min': 40, 'action': 'continue'},
                     'low': {'min': 0, 'action': 'continue'}
                 }
+            },
+            'concurrency': {
+                'test_case_concurrent': 3
             }
         }
 

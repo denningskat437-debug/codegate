@@ -221,22 +221,29 @@ def trigger():
         logger.info(f"风险等级: {risk_result.get('level')}")
         logger.info(f"风险分数: {risk_result.get('score')}")
 
-        # 高风险直接打回
+        # 高风险处理：根据配置决定是否跳过测试
         if risk_result.get('level') == 'high':
-            logger.warning("高风险代码，直接打回")
+            skip_test = config.get('risk.skip_test_on_high', True)
 
-            commit_info = git.get_commit_info()
+            if skip_test:
+                # 跳过测试，直接打回
+                logger.warning("高风险代码，跳过测试用例，直接打回")
 
-            report_gen = ReportGenerator()
-            report = report_gen.generate(
-                project_name, risk_result, [], commit_info, user_info,
-                code_stats=code_stats, time_stats={'total_time': 0, 'average_time': 0}
-            )
+                commit_info = git.get_commit_info()
 
-            _send_email_notification(project_name, risk_result, [], user_info, report)
+                report_gen = ReportGenerator()
+                report = report_gen.generate(
+                    project_name, risk_result, [], commit_info, user_info,
+                    code_stats=code_stats, time_stats={'total_time': 0, 'average_time': 0}
+                )
 
-            git.cleanup()
-            return jsonify(ResponseBuilder.risk_reject(risk_result, report.get('url')))
+                _send_email_notification(project_name, risk_result, [], user_info, report)
+
+                git.cleanup()
+                return jsonify(ResponseBuilder.risk_reject(risk_result, report.get('url')))
+            else:
+                # 高风险但继续执行测试
+                logger.warning("高风险代码，但配置为继续执行测试用例")
 
         # ========== 第五步：测试用例校验 ==========
         logger.info(">>> 第五步：测试用例校验")
