@@ -8,6 +8,10 @@ import tempfile
 import shutil
 import logging
 
+# 导入重试装饰器和并发控制
+from src.retry_handler import retry_git_operation
+from src.concurrency_manager import temp_dir_manager
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,6 +30,7 @@ class GitHandler:
         self.branch = branch
         self.repo_dir = None
 
+    @retry_git_operation(max_attempts=3, wait_seconds=5.0)
     def clone(self) -> str:
         """
         克隆仓库到临时目录
@@ -34,6 +39,8 @@ class GitHandler:
             代码目录路径
         """
         self.repo_dir = tempfile.mkdtemp(prefix='codegate_')
+        # 注册临时目录到管理器
+        temp_dir_manager.register(self.repo_dir)
         logger.info(f"开始克隆仓库: {self.repo_url} -> {self.repo_dir}")
 
         try:
@@ -124,12 +131,7 @@ class GitHandler:
             }
 
     def cleanup(self):
-        """清理临时目录"""
-        if self.repo_dir and os.path.exists(self.repo_dir):
-            try:
-                shutil.rmtree(self.repo_dir)
-                logger.info(f"已清理临时目录: {self.repo_dir}")
-            except Exception as e:
-                logger.warning(f"清理临时目录失败: {e}")
-            finally:
-                self.repo_dir = None
+        """清理临时目录 (使用并发安全管理器)"""
+        if self.repo_dir:
+            temp_dir_manager.cleanup(self.repo_dir)
+            self.repo_dir = None

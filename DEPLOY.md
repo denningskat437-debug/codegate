@@ -94,7 +94,68 @@ source ~/.bashrc
 
 # 方式三：写入 systemd 服务配置（推荐）
 # 见下文服务配置部分
+
+# SMTP 密码配置（邮件通知需要）
+export SMTP_PASSWORD="your_smtp_password_here"
 ```
+
+---
+
+## 四、配置文件
+
+### 4.1 主配置文件
+
+创建 `configs/config.yml`：
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8000
+  debug: false
+
+paths:
+  cache_dir: "cache/hashes"
+  report_dir: "reports"
+  log_dir: "logs"
+
+email:
+  enabled: true
+  smtp_host: "smtp.qq.com"
+  smtp_port: 465
+  use_ssl: true
+  smtp_user: "your@qq.com"
+  from_email: "your@qq.com"
+  base_url: "http://your-server:8000"
+
+user_mapping:
+  enabled: true
+  file: "data/user_mapping.xlsx"
+
+risk:
+  thresholds:
+    high:
+      min: 70
+      action: "reject"
+    medium:
+      min: 40
+      action: "continue"
+    low:
+      min: 0
+      action: "continue"
+
+logging:
+  level: "INFO"
+  file: "logs/codegate.log"
+```
+
+### 4.2 用户映射文件
+
+创建 `data/user_mapping.xlsx`：
+
+| username | email |
+|----------|-------|
+| zhangsan | zhangsan@company.com |
+| lisi | lisi@company.com |
 
 ---
 
@@ -107,9 +168,10 @@ cd /opt/codegate
 mkdir -p cache/hashes
 mkdir -p reports
 mkdir -p logs
+mkdir -p data
 
 # 设置权限
-chmod -R 755 cache reports logs
+chmod -R 755 cache reports logs data
 ```
 
 ---
@@ -130,6 +192,7 @@ User=root
 WorkingDirectory=/opt/codegate
 Environment="PATH=/opt/codegate/venv/bin"
 Environment="ANTHROPIC_API_KEY=your_api_key_here"
+Environment="SMTP_PASSWORD=your_smtp_password_here"
 ExecStart=/opt/codegate/venv/bin/gunicorn \
   --workers 2 \
   --threads 4 \
@@ -376,6 +439,20 @@ systemctl cat codegate
 # 增加 Git 克隆超时时间
 # 修改 app.py 中的 timeout 参数
 ```
+
+### Q5: 邮件发送失败
+
+- 检查 SMTP 配置是否正确（smtp_host, smtp_port, smtp_user）
+- 检查 SMTP_PASSWORD 环境变量是否设置
+- 检查是否使用 SSL 连接（QQ邮箱需要 use_ssl: true）
+- 检查 SMTP 授权码是否正确（不是邮箱密码）
+- 查看日志中的具体错误信息：`tail -f logs/codegate.log`
+
+### Q6: 用户映射无效
+
+- 检查 user_mapping.enabled 是否为 true
+- 检查 data/user_mapping.xlsx 文件是否存在
+- 检查 Excel 文件格式是否正确（username, email 两列）
 
 ---
 

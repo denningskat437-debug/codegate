@@ -1,0 +1,66 @@
+# CodeGate 主配置文件
+
+# 服务器配置
+server:
+  host: "0.0.0.0"
+  port: 8000
+  debug: false
+
+# 日志配置
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/codegate.log"
+
+# 路径配置
+paths:
+  cache_dir: "cache/hashes"
+  report_dir: "reports"
+  log_dir: "logs"
+
+# Git 配置
+git:
+  clone_timeout: 300      # 克隆超时时间(秒)
+  clone_depth: 2         # 克隆深度
+  retry_attempts: 3      # 重试次数
+  retry_wait: 5          # 重试等待时间(秒)
+
+# Claude SDK 配置
+claude:
+  retry_attempts: 3      # 重试次数
+  retry_wait_min: 2      # 最小等待时间(秒)
+  retry_wait_max: 30     # 最大等待时间(秒)
+  allowed_tools:
+    - Read
+    - Glob
+    - Grep
+
+# 风险评估配置
+risk:
+  rules_file: "configs/risk_rules.yml"
+  thresholds:
+    high:
+      min: 70
+      action: "reject"
+    medium:
+      min: 40
+      action: "continue"
+    low:
+      min: 0
+      action: "continue"
+
+# 邮件配置
+email:
+  enabled: true                              # 是否启用邮件发送
+  smtp_host: "smtp.qq.com"                   # SMTP 服务器地址
+  smtp_port: 465                             # SMTP 端口 (SSL)
+  use_ssl: true                              # 是否使用 SSL 连接
+  smtp_user: "842588869@qq.com"              # SMTP 用户名
+  smtp_password: ""                          # SMTP 密码（建议使用环境变量 SMTP_PASSWORD）
+  from_email: "842588869@qq.com"             # 发件人邮箱
+  base_url: "http://117.72.191.205:8000"     # 报告链接基础URL
+
+# 用户映射配置
+user_mapping:
+  enabled: true                     # 是否启用用户映射
+  file: "data/user_mapping.xlsx"    # 用户映射文件路径

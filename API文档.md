@@ -43,7 +43,10 @@ POST /api/trigger
 | test_case_file | string | 是 | 测试用例文件路径（相对于项目根目录） |
 | branch | string | 否 | 分支名称，默认 main |
 | event | string | 否 | 触发事件类型，如 push |
-| build_user | string | 否 | 构建用户 |
+| build_user | string | 否 | 触发者用户名 |
+| build_user_nickname | string | 否 | 触发者昵称 |
+| commit_id | string | 否 | 提交ID |
+| committer | string | 否 | 提交者用户名（用于从用户映射查找邮箱） |
 
 ### 请求示例
 
@@ -56,7 +59,10 @@ curl -X POST http://localhost:8000/api/trigger \
     "test_case_file": "test_cases/mrdoc.xlsx",
     "branch": "main",
     "event": "push",
-    "build_user": "developer"
+    "build_user": "developer",
+    "build_user_nickname": "开发者",
+    "commit_id": "abc123",
+    "committer": "zhangsan"
   }'
 ```
 
@@ -71,6 +77,14 @@ curl -X POST http://localhost:8000/api/trigger \
 | summary.passed | int | 通过数 |
 | summary.failed | int | 失败数 |
 | summary.pass_rate | string | 通过率 |
+| code_statistics | object | 代码统计信息（新增） |
+| code_statistics.total_lines | int | 代码总量（行） |
+| code_statistics.total_files | int | 文件数量 |
+| code_statistics.project_type | string | 项目类型 |
+| code_statistics.main_languages | array | 主要语言列表 |
+| test_time_statistics | object | 测试执行时间统计（新增） |
+| test_time_statistics.total_execution_time | float | 总执行时间（秒） |
+| test_time_statistics.average_execution_time | float | 平均执行时间（秒/用例） |
 | results | array | 测试结果列表 |
 | report_url | string | 报告下载地址 |
 
@@ -88,6 +102,18 @@ curl -X POST http://localhost:8000/api/trigger \
     "failed": 0,
     "pass_rate": "100.0%"
   },
+  "code_statistics": {
+    "total_lines": 50000,
+    "total_files": 120,
+    "project_type": "backend",
+    "main_languages": ["Python", "JavaScript"]
+  },
+  "test_time_statistics": {
+    "total_execution_time": 150.5,
+    "average_execution_time": 15.05,
+    "min_execution_time": 8.2,
+    "max_execution_time": 25.3
+  },
   "results": [
     {
       "case_id": "TC001",
@@ -95,9 +121,15 @@ curl -X POST http://localhost:8000/api/trigger \
       "test_point": "登录验证",
       "priority": "P0",
       "result": "passed",
+      "execution_time": 12.5,
       "test_time": "2026-05-15 12:00:00",
       "evidence": "代码中 login 函数实现了登录验证功能，位于 app/auth.py 第 45 行",
-      "problem_code": ""
+      "problem_code": "",
+      "analysis": {
+        "conclusion": "登录功能实现完整，符合预期",
+        "strengths": ["代码结构清晰", "有完善的错误处理"],
+        "weaknesses": []
+      }
     }
   ],
   "report_url": "/reports/TASK20260515120000/report.json"
@@ -482,6 +514,41 @@ fi
 2. **并发限制** - 建议控制并发请求数，避免服务器过载
 3. **重试机制** - 遇到 500 错误时，建议等待后重试
 4. **网络访问** - 服务器需要能访问 Git 仓库和 Claude API
+5. **邮件通知** - 需要配置 SMTP 服务器，邮件会发送给用户映射文件中匹配的邮箱
+6. **用户映射** - 系统根据 `committer` 用户名从用户映射 Excel 文件中查找邮箱
+
+---
+
+## 邮件配置
+
+邮件通知功能需要在 `configs/config.yml` 中配置：
+
+```yaml
+email:
+  enabled: true                    # 是否启用邮件通知
+  smtp_host: "smtp.qq.com"         # SMTP 服务器地址
+  smtp_port: 465                   # SMTP 端口
+  use_ssl: true                    # 是否使用 SSL
+  smtp_user: "your@qq.com"         # SMTP 用户名
+  from_email: "your@qq.com"        # 发件人邮箱
+  base_url: "http://server:8000"   # 报告访问地址
+
+user_mapping:
+  enabled: true                    # 是否启用用户映射
+  file: "data/user_mapping.xlsx"   # 用户映射文件路径
+```
+
+SMTP 密码通过环境变量设置：
+```bash
+export SMTP_PASSWORD="your_smtp_password"
+```
+
+用户映射文件格式（Excel）：
+
+| username | email |
+|----------|-------|
+| zhangsan | zhangsan@company.com |
+| lisi | lisi@company.com |
 
 ---
 

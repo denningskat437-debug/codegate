@@ -1,13 +1,24 @@
-main: 
-    push:      
-      - name: "call trigger api"
-        stages:          
-          - name: "trigger codegate"
-            script: |
-              curl -X POST "http://117.72.191.205:8000/api/trigger" \
-                -H "Content-Type: application/json" \
-                -d '{
-                  "project_name": "test",
-                  "repo_url": "https://cnb.cool/test-2026_513/test",
-                  "test_case_file": "test_cases/test_sample.xlsx"
-                }'
+main:
+  push:
+    - name: "call trigger api"
+      stages:
+        - name: "trigger codegate"
+          script: |
+            echo "触发者用户名：${CNB_BUILD_USER}"
+            echo "触发者昵称：${CNB_BUILD_USER_NICKNAME}"
+            echo "当前分支：${CNB_BRANCH}"
+            echo "触发事件：${CNB_EVENT}"
+
+            curl -X POST "http://117.72.191.205:8000/api/trigger" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "project_name": "test",
+                "repo_url": "https://cnb.cool/test-2026_513/test.git",
+                "test_case_file": "test_cases/test_sample.xlsx",
+                "branch": "'${CNB_BRANCH}'",
+                "event": "'${CNB_EVENT}'",
+                "build_user": "'${CNB_BUILD_USER}'",
+                "build_user_nickname": "'${CNB_BUILD_USER_NICKNAME}'",
+                "commit_id": "'${CNB_COMMIT}'",
+                "committer": "'${CNB_COMMITTER}'"
+              }'

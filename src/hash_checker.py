@@ -8,6 +8,9 @@ import subprocess
 import logging
 from pathlib import Path
 
+# 导入并发控制
+from src.concurrency_manager import FileLock
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,6 +26,7 @@ class HashChecker:
         """
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self._lock = FileLock(str(self.cache_dir / '.hash.lock'))
 
     def get_hash(self, code_path: str) -> str:
         """
@@ -84,7 +88,7 @@ class HashChecker:
 
     def get_cached_hash(self, project_name: str) -> str:
         """
-        获取缓存的哈希值
+        获取缓存的哈希值 (线程安全)
 
         Args:
             project_name: 项目名称
@@ -92,24 +96,26 @@ class HashChecker:
         Returns:
             缓存的哈希值，不存在则返回 None
         """
-        cache_file = self.cache_dir / f"{project_name}.hash"
-        if cache_file.exists():
-            cached = cache_file.read_text().strip()
-            logger.info(f"获取到缓存哈希: {cached[:8]}...")
-            return cached
+        with self._lock.acquire(timeout=5.0):
+            cache_file = self.cache_dir / f"{project_name}.hash"
+            if cache_file.exists():
+                cached = cache_file.read_text().strip()
+                logger.info(f"获取到缓存哈希: {cached[:8]}...")
+                return cached
         return None
 
     def save_hash(self, project_name: str, hash_value: str):
         """
-        保存哈希值到缓存
+        保存哈希值到缓存 (线程安全)
 
         Args:
             project_name: 项目名称
             hash_value: 哈希值
         """
-        cache_file = self.cache_dir / f"{project_name}.hash"
-        cache_file.write_text(hash_value)
-        logger.info(f"已保存哈希缓存: {hash_value[:8]}...")
+        with self._lock.acquire(timeout=5.0):
+            cache_file = self.cache_dir / f"{project_name}.hash"
+            cache_file.write_text(hash_value)
+            logger.info(f"已保存哈希缓存: {hash_value[:8]}...")
 
     def clear_cache(self, project_name: str):
         """

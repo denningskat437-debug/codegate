@@ -25,6 +25,9 @@ except ImportError:
     logger.warning("claude_agent_sdk 未安装，AI 风险评估功能将不可用")
     CLAUDE_SDK_AVAILABLE = False
 
+# 导入重试装饰器
+from src.retry_handler import retry_claude_sdk
+
 
 class AIRiskAnalyzer:
     """AI 风险评估器 - 使用 Claude Agent SDK"""
@@ -55,6 +58,7 @@ class AIRiskAnalyzer:
             logger.error(f"AI 风险评估异常: {e}")
             return self._default_result(str(e))
 
+    @retry_claude_sdk(max_attempts=3, wait_min=2.0, wait_max=30.0)
     async def _analyze_async(self) -> Dict:
         """异步执行风险评估"""
         prompt = """
